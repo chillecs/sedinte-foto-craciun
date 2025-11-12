@@ -37,6 +37,7 @@ Pentru a activa trimiterea email-urilor:
 4. **Obțineți Public Key**:
    - Mergeți la Dashboard > Account > API Keys
    - Copiați `Public Key`
+
 5. **Actualizați configurația** în `js/bookings.js`:
    ```javascript
    const EMAILJS_CONFIG = {
@@ -69,11 +70,6 @@ Pentru a activa trimiterea email-urilor:
 1. Conectați repository-ul GitHub/GitLab
 2. Netlify va detecta automat site-ul static
 3. Site-ul va fi live imediat
-
-#### Vercel:
-1. Instalați Vercel CLI: `npm i -g vercel`
-2. Rulați `vercel` în folderul proiectului
-3. Urmați instrucțiunile
 
 ## ✨ Funcționalități
 
@@ -121,9 +117,9 @@ Pentru a salva rezervările online (în loc de LocalStorage):
 Modificați variabilele CSS din `css/style.css`:
 ```css
 :root {
-    --primary-color: #c41e3a;    /* Roșu de Crăciun */
-    --secondary-color: #228b22;  /* Verde */
-    --accent-color: #ffd700;      /* Auriu */
+    --primary-color: #dc143c;    /* Roșu */
+    --secondary-color: #000000;  /* Negru */
+    --accent-color: #ffd700;     /* Auriu */
 }
 ```
 

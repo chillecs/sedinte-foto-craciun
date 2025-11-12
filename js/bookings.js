@@ -15,7 +15,7 @@ let EMAILJS_CONFIG = {
     TEMPLATE_ID: ''
 };
 
-let RECIPIENT_EMAIL = 'cryssthrill@gmail.com';
+let RECIPIENT_EMAIL = '';
 
 // Flag pentru a verifica dacă configurația a fost încărcată
 let emailjsConfigLoaded = false;
@@ -459,7 +459,7 @@ function submitToNetlify(form, formData, submitBtn) {
     })
     .then(() => {
         // Succes - Netlify va procesa formularul
-        // Trimite email prin EmailJS la cryssthrill@gmail.com
+        // Trimite email prin EmailJS
         sendEmail(formData)
             .then(() => {
                 showMessage('Rezervarea a fost trimisă cu succes! Veți primi un email de confirmare în curând.', 'success');
@@ -503,6 +503,11 @@ async function sendEmail(formData) {
         return Promise.reject(new Error('EmailJS nu este configurat. Verificați variabilele de mediu în Netlify (PUBLIC_KEY, SERVICE_ID, TEMPLATE_ID).'));
     }
     
+    // Verifică dacă RECIPIENT_EMAIL este setat
+    if (!RECIPIENT_EMAIL || RECIPIENT_EMAIL === '') {
+        return Promise.reject(new Error('RECIPIENT_EMAIL nu este configurat. Verificați variabila de mediu RECIPIENT_EMAIL în Netlify.'));
+    }
+    
     // Formatează data pentru email
     const dateObj = new Date(formData.date);
     const formattedDate = dateObj.toLocaleDateString('ro-RO', {
@@ -514,7 +519,7 @@ async function sendEmail(formData) {
     
     // Parametrii pentru template-ul EmailJS
     const templateParams = {
-        to_email: RECIPIENT_EMAIL,                    // Email destinatar
+        to_email: RECIPIENT_EMAIL,                    // Email destinatar (din variabilă de mediu)
         to_name: 'Echipa Christmas Photoshoot',      // Nume destinatar
         from_name: formData.name,                     // Nume client
         from_email: formData.email,                   // Email client

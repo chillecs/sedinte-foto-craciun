@@ -14,12 +14,12 @@ exports.handler = async (event, context) => {
 
     try {
         // Citește variabilele de mediu din Netlify
-        // Numele variabilelor: PUBLIC_KEY, SERVICE_ID, TEMPLATE_ID
+        // Numele variabilelor: PUBLIC_KEY, SERVICE_ID, TEMPLATE_ID, RECIPIENT_EMAIL
         const config = {
             PUBLIC_KEY: process.env.PUBLIC_KEY || '',
             SERVICE_ID: process.env.SERVICE_ID || '',
             TEMPLATE_ID: process.env.TEMPLATE_ID || '',
-            RECIPIENT_EMAIL: process.env.RECIPIENT_EMAIL || 'cryssthrill@gmail.com'
+            RECIPIENT_EMAIL: process.env.RECIPIENT_EMAIL || ''
         };
 
         // Verifică dacă configurația este completă
@@ -28,6 +28,16 @@ exports.handler = async (event, context) => {
                 statusCode: 500,
                 body: JSON.stringify({ 
                     error: 'EmailJS nu este configurat complet. Verificați variabilele de mediu în Netlify (PUBLIC_KEY, SERVICE_ID, TEMPLATE_ID).' 
+                })
+            };
+        }
+        
+        // Verifică dacă RECIPIENT_EMAIL este setat
+        if (!config.RECIPIENT_EMAIL || config.RECIPIENT_EMAIL === '') {
+            return {
+                statusCode: 500,
+                body: JSON.stringify({ 
+                    error: 'RECIPIENT_EMAIL nu este configurat. Adăugați variabila de mediu RECIPIENT_EMAIL în Netlify.' 
                 })
             };
         }

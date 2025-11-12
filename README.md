@@ -43,11 +43,11 @@ Pentru a activa trimiterea email-urilor:
    **După ce site-ul este linkat cu Netlify:**
    - În **Netlify Dashboard** > Selectați site-ul
    - Mergeți la **Site settings** > **Environment variables**
-   - Adăugați următoarele variabile:
-     - **Key**: `PUBLIC_KEY` → **Value**: `valoarea ta`
-     - **Key**: `SERVICE_ID` → **Value**: `valoarea ta`
-     - **Key**: `TEMPLATE_ID` → **Value**: `valoarea ta`
-     - **Key**: `RECIPIENT_EMAIL` → **Value**: `valoarea ta`
+   - Adăugați următoarele variabile (toate sunt obligatorii):
+     - **Key**: `PUBLIC_KEY` → **Value**: `valoarea ta EmailJS Public Key`
+     - **Key**: `SERVICE_ID` → **Value**: `valoarea ta EmailJS Service ID`
+     - **Key**: `TEMPLATE_ID` → **Value**: `valoarea ta EmailJS Template ID`
+     - **Key**: `RECIPIENT_EMAIL` → **Value**: `email-ul unde vrei să primești rezervările` (ex: `cryssthrill@gmail.com`)
    - Click **Save** pentru fiecare variabilă
    - **Redeploy** site-ul pentru a aplica modificările
    

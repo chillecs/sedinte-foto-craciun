@@ -35,125 +35,89 @@ const AVAILABLE_TIME_SLOTS = [
 // STOCARE REZERVĂRI - Neon PostgreSQL
 // ============================================
 // Folosește Netlify Functions pentru a salva în Neon
-// Fallback la LocalStorage dacă Neon nu este disponibil
-
-// Configurare: Setează USE_NEON la true pentru a folosi Neon
-const USE_NEON = true; // Schimbă la false pentru a folosi LocalStorage
+// Nu folosește LocalStorage - doar Neon PostgreSQL
 
 // ============================================
 // FUNCȚII PENTRU NEON (prin Netlify Functions)
 // ============================================
 
 async function getBookingsFromNeon(date) {
-    try {
-        const response = await fetch(`/.netlify/functions/get-bookings?date=${date}`);
-        if (!response.ok) throw new Error('Eroare la obținere rezervări');
-        const data = await response.json();
-        return data.bookedSlots || [];
-    } catch (error) {
-        console.error('Eroare la obținere rezervări din Neon:', error);
-        return [];
+    const response = await fetch(`/.netlify/functions/get-bookings?date=${date}`);
+    
+    if (!response.ok) {
+        // Încearcă să obțină mesajul de eroare din response
+        let errorMessage = 'Eroare la obținere rezervări';
+        try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        console.error('Eroare response:', errorMessage);
+        throw new Error(errorMessage);
     }
+    
+    const data = await response.json();
+    return data.bookedSlots || [];
 }
 
 async function saveBookingToNeon(date, timeSlot, bookingData) {
-    try {
-        const response = await fetch('/.netlify/functions/save-booking', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                ...bookingData,
-                date: date,
-                timeSlot: timeSlot
-            })
-        });
-        
-        if (!response.ok) {
+    const response = await fetch('/.netlify/functions/save-booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            ...bookingData,
+            date: date,
+            timeSlot: timeSlot
+        })
+    });
+    
+    if (!response.ok) {
+        let errorMessage = 'Eroare la salvare';
+        try {
             const error = await response.json();
-            throw new Error(error.error || 'Eroare la salvare');
+            errorMessage = error.error || errorMessage;
+        } catch (e) {
+            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('Eroare la salvare în Neon:', error);
-        throw error;
+        throw new Error(errorMessage);
     }
+    
+    return await response.json();
 }
 
 async function checkBookingInNeon(date, timeSlot) {
-    try {
-        const response = await fetch(`/.netlify/functions/check-booking?date=${date}&timeSlot=${timeSlot}`);
-        if (!response.ok) return false;
-        const data = await response.json();
-        return data.isBooked || false;
-    } catch (error) {
-        console.error('Eroare la verificare în Neon:', error);
-        return false;
+    const response = await fetch(`/.netlify/functions/check-booking?date=${date}&timeSlot=${timeSlot}`);
+    
+    if (!response.ok) {
+        let errorMessage = 'Eroare la verificare booking';
+        try {
+            const error = await response.json();
+            errorMessage = error.error || errorMessage;
+        } catch (e) {
+            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
     }
+    
+    const data = await response.json();
+    return data.isBooked || false;
 }
 
 // ============================================
-// FUNCȚII PENTRU LOCALSTORAGE (Fallback)
-// ============================================
-
-function getBookingsFromLocalStorage() {
-    const bookings = localStorage.getItem('christmasBookings');
-    return bookings ? JSON.parse(bookings) : {};
-}
-
-function saveBookingToLocalStorage(date, timeSlot, bookingData) {
-    const bookings = getBookingsFromLocalStorage();
-    const key = `${date}_${timeSlot}`;
-    bookings[key] = {
-        ...bookingData,
-        date: date,
-        timeSlot: timeSlot,
-        bookedAt: new Date().toISOString()
-    };
-    localStorage.setItem('christmasBookings', JSON.stringify(bookings));
-    return bookings;
-}
-
-function isTimeSlotBookedInLocalStorage(date, timeSlot) {
-    const bookings = getBookingsFromLocalStorage();
-    const key = `${date}_${timeSlot}`;
-    return bookings.hasOwnProperty(key);
-}
-
-// ============================================
-// FUNCȚII UNIFICATE (folosesc Neon sau LocalStorage)
+// FUNCȚII UNIFICATE (doar Neon)
 // ============================================
 
 async function getBookings(date) {
-    if (USE_NEON) {
-        return await getBookingsFromNeon(date);
-    } else {
-        const bookings = getBookingsFromLocalStorage();
-        // Returnează sloturile rezervate pentru data specificată
-        const bookedSlots = [];
-        Object.keys(bookings).forEach(key => {
-            if (bookings[key].date === date) {
-                bookedSlots.push(bookings[key].timeSlot);
-            }
-        });
-        return bookedSlots;
-    }
+    return await getBookingsFromNeon(date);
 }
 
 async function saveBooking(date, timeSlot, bookingData) {
-    if (USE_NEON) {
-        return await saveBookingToNeon(date, timeSlot, bookingData);
-    } else {
-        return saveBookingToLocalStorage(date, timeSlot, bookingData);
-    }
+    return await saveBookingToNeon(date, timeSlot, bookingData);
 }
 
 async function isTimeSlotBooked(date, timeSlot) {
-    if (USE_NEON) {
-        return await checkBookingInNeon(date, timeSlot);
-    } else {
-        return isTimeSlotBookedInLocalStorage(date, timeSlot);
-    }
+    return await checkBookingInNeon(date, timeSlot);
 }
 
 // ============================================
@@ -214,18 +178,30 @@ async function displayTimeSlots(date) {
     // Golește grid-ul
     grid.innerHTML = '<p>Se încarcă...</p>';
     
-    // Obține rezervările pentru această dată
-    const bookedSlots = await getBookings(date);
-    
-    // Golește grid-ul din nou
-    grid.innerHTML = '';
-    
-    // Creează butoane pentru fiecare slot de timp
-    AVAILABLE_TIME_SLOTS.forEach(timeSlot => {
-        const isBooked = bookedSlots.includes(timeSlot);
-        const button = createTimeSlotButton(timeSlot, isBooked, date);
-        grid.appendChild(button);
-    });
+    try {
+        // Obține rezervările pentru această dată
+        const bookedSlots = await getBookings(date);
+        
+        // Golește grid-ul din nou
+        grid.innerHTML = '';
+        
+        // Creează butoane pentru fiecare slot de timp
+        AVAILABLE_TIME_SLOTS.forEach(timeSlot => {
+            const isBooked = bookedSlots.includes(timeSlot);
+            const button = createTimeSlotButton(timeSlot, isBooked, date);
+            grid.appendChild(button);
+        });
+    } catch (error) {
+        console.error('Eroare la afișare sloturi:', error);
+        // Afișează mesaj de eroare
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; padding: 1rem; background-color: #f8d7da; color: #721c24; border-radius: 5px; text-align: center;">
+                <p><strong>Eroare la încărcarea rezervărilor</strong></p>
+                <p style="font-size: 0.9rem; margin-top: 0.5rem;">${error.message}</p>
+                <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.8;">Verificați că baza de date Neon este configurată corect.</p>
+            </div>
+        `;
+    }
     
     // Afișează containerul
     container.style.display = 'block';
@@ -382,12 +358,15 @@ async function submitBooking(formData) {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Se trimite...';
     
-    // Salvează rezervarea în Neon sau LocalStorage
+    // Salvează rezervarea în Neon
     try {
         await saveBooking(selectedDate, selectedTimeSlot, formData);
     } catch (error) {
         console.error('Eroare la salvare rezervare:', error);
-        // Continuă cu trimiterea formularului chiar dacă salvare a eșuat
+        showMessage(`Eroare la salvare în baza de date: ${error.message}`, 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Rezervează';
+        return; // Oprește procesarea dacă salvare a eșuat
     }
     
     // Verifică dacă suntem pe Netlify (formularele cu atributul netlify)

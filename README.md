@@ -206,8 +206,7 @@ Pentru a salva rezervările online cu Firebase Firestore:
 
 ## 📝 Notițe Importante
 
-- **Neon PostgreSQL**: Rezervările sunt salvate în baza de date Neon (recomandat pentru producție)
-- **LocalStorage**: Fallback pentru dezvoltare locală (când `USE_NEON = false`)
+- **Neon PostgreSQL**: Rezervările sunt salvate exclusiv în baza de date Neon (obligatoriu pentru funcționare)
 - **EmailJS**: Este necesar pentru trimiterea email-urilor de confirmare.
 - **Responsive**: Site-ul este optimizat pentru desktop, tabletă și mobil.
 - **Browser Support**: Funcționează pe toate browserele moderne.

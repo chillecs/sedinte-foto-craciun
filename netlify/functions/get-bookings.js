@@ -15,6 +15,17 @@ exports.handler = async (event, context) => {
     }
 
     try {
+        // Verifică dacă DATABASE_URL este configurat
+        if (!process.env.DATABASE_URL) {
+            console.error('DATABASE_URL nu este configurat');
+            return {
+                statusCode: 500,
+                body: JSON.stringify({ 
+                    error: 'DATABASE_URL nu este configurat. Verificați variabilele de mediu în Netlify.' 
+                })
+            };
+        }
+
         // Extrage parametrul date din query string
         const { date } = event.queryStringParameters || {};
 
@@ -52,9 +63,21 @@ exports.handler = async (event, context) => {
 
     } catch (error) {
         console.error('Eroare la obținere rezervări:', error);
+        
+        // Mesaje de eroare mai detaliate
+        let errorMessage = 'Eroare la obținere rezervări din baza de date';
+        
+        if (error.message.includes('relation') && error.message.includes('does not exist')) {
+            errorMessage = 'Tabelul bookings nu există. Rulați database-schema.sql în Neon.';
+        } else if (error.message.includes('connection') || error.message.includes('ECONNREFUSED')) {
+            errorMessage = 'Eroare de conexiune la baza de date. Verificați DATABASE_URL.';
+        } else {
+            errorMessage = error.message || errorMessage;
+        }
+        
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: 'Eroare la obținere rezervări din baza de date' })
+            body: JSON.stringify({ error: errorMessage })
         };
     }
 };

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Christmas Photoshoot - Rezervări</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">🎄 Christmas Photoshoot</div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Acasă</a></li>
+                <li><a href="galerie.html">Galerie</a></li>
+                <li><a href="bookings.html" class="active">Rezervări</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <section class="bookings-hero">
+            <div class="container">
+                <h1>Rezervă Sesțiunea Ta</h1>
+                <p>Selectează data și ora pentru sesiunea de fotografii de Crăciun</p>
+            </div>
+        </section>
+
+        <section class="bookings-section">
+            <div class="container">
+                <div class="bookings-layout">
+                    <!-- Left side: Calendar and Time Slots -->
+                    <div class="bookings-left">
+                        <div class="calendar-container">
+                            <h2>Selectează Data</h2>
+                            <div class="calendar-wrapper">
+                                <input type="date" id="datePicker" class="date-input" min="" required>
+                            </div>
+                            <div id="timeSlotsContainer" class="time-slots-container" style="display: none;">
+                                <h3>Ore Disponibile</h3>
+                                <div class="time-slots-grid" id="timeSlotsGrid">
+                                    <!-- Time slots will be generated here by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right side: Booking Form -->
+                    <div class="bookings-right">
+                        <div class="booking-form-container">
+                            <h2>Detalii Rezervare</h2>
+                            <form id="bookingForm" class="booking-form">
+                                <div class="form-group">
+                                    <label for="name">Nume complet *</label>
+                                    <input type="text" id="name" name="name" required placeholder="Introduceți numele complet">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="email">Email *</label>
+                                    <input type="email" id="email" name="email" required placeholder="exemplu@email.com">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="phone">Telefon *</label>
+                                    <input type="tel" id="phone" name="phone" required placeholder="07XX XXX XXX">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="details">Alte detalii relevante</label>
+                                    <textarea id="details" name="details" rows="4" placeholder="Număr de persoane, preferințe speciale, etc."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="selected-info" id="selectedInfo" style="display: none;">
+                                        <p><strong>Data selectată:</strong> <span id="selectedDate"></span></p>
+                                        <p><strong>Ora selectată:</strong> <span id="selectedTime"></span></p>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-block" id="submitBtn" disabled>
+                                    Rezervează
+                                </button>
+
+                                <div id="formMessage" class="form-message"></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 Christmas Photoshoot. Toate drepturile rezervate.</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script src="js/bookings.js"></script>
+</body>
+</html>
+

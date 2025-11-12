@@ -26,7 +26,14 @@ let emailjsConfigLoaded = false;
 async function loadEmailJSConfig() {
     try {
         console.log('Încărcare configurație EmailJS din Netlify...');
-        const response = await fetch('/.netlify/functions/get-emailjs-config');
+        // Adăugăm timestamp pentru a evita cache-ul browser-ului
+        const timestamp = new Date().getTime();
+        const response = await fetch(`/.netlify/functions/get-emailjs-config?t=${timestamp}`, {
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        });
         
         if (!response.ok) {
             const errorText = await response.text();

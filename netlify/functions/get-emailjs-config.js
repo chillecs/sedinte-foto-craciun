@@ -65,7 +65,9 @@ exports.handler = async (event, context) => {
             statusCode: 200,
             headers: {
                 'Content-Type': 'application/json',
-                'Cache-Control': 'public, max-age=3600' // Cache pentru 1 oră
+                'Cache-Control': 'no-cache, no-store, must-revalidate', // Fără cache pentru configurație
+                'Pragma': 'no-cache',
+                'Expires': '0'
             },
             body: JSON.stringify(config)
         };

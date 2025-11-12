@@ -25,9 +25,12 @@ let emailjsConfigLoaded = false;
 // ============================================
 async function loadEmailJSConfig() {
     try {
+        console.log('Încărcare configurație EmailJS din Netlify...');
         const response = await fetch('/.netlify/functions/get-emailjs-config');
         
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Eroare response:', response.status, errorText);
             console.warn('Nu s-a putut încărca configurația EmailJS din Netlify. Verificați că variabilele de mediu sunt setate.');
             emailjsConfigLoaded = false;
             return;
@@ -41,15 +44,29 @@ async function loadEmailJSConfig() {
             return;
         }
         
+        // Verifică dacă configurația este validă
+        if (!config.PUBLIC_KEY || !config.SERVICE_ID || !config.TEMPLATE_ID) {
+            console.error('Configurația EmailJS este incompletă:', config);
+            emailjsConfigLoaded = false;
+            return;
+        }
+        
         EMAILJS_CONFIG = {
-            PUBLIC_KEY: config.PUBLIC_KEY,
-            SERVICE_ID: config.SERVICE_ID,
-            TEMPLATE_ID: config.TEMPLATE_ID
+            PUBLIC_KEY: config.PUBLIC_KEY.trim(),
+            SERVICE_ID: config.SERVICE_ID.trim(),
+            TEMPLATE_ID: config.TEMPLATE_ID.trim()
         };
         
         if (config.RECIPIENT_EMAIL) {
-            RECIPIENT_EMAIL = config.RECIPIENT_EMAIL;
+            RECIPIENT_EMAIL = config.RECIPIENT_EMAIL.trim();
         }
+        
+        console.log('Configurația EmailJS încărcată cu succes:', {
+            hasPublicKey: !!EMAILJS_CONFIG.PUBLIC_KEY,
+            hasServiceId: !!EMAILJS_CONFIG.SERVICE_ID,
+            hasTemplateId: !!EMAILJS_CONFIG.TEMPLATE_ID,
+            hasRecipientEmail: !!RECIPIENT_EMAIL
+        });
         
         emailjsConfigLoaded = true;
         initializeEmailJS();
@@ -62,11 +79,23 @@ async function loadEmailJSConfig() {
 
 // Inițializare EmailJS după ce configurația este încărcată
 function initializeEmailJS() {
-    if (EMAILJS_CONFIG.PUBLIC_KEY && EMAILJS_CONFIG.PUBLIC_KEY !== 'YOUR_PUBLIC_KEY' && EMAILJS_CONFIG.PUBLIC_KEY !== '') {
-        emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
-        console.log('EmailJS inițializat cu succes');
+    // Verifică dacă EmailJS SDK este încărcat
+    if (typeof emailjs === 'undefined') {
+        console.error('EmailJS SDK nu este încărcat! Verificați că script-ul este inclus în bookings.html');
+        return;
+    }
+    
+    if (EMAILJS_CONFIG.PUBLIC_KEY && EMAILJS_CONFIG.PUBLIC_KEY.trim() !== '') {
+        try {
+            // Curăță public key-ul de spații și caractere invizibile
+            const cleanPublicKey = EMAILJS_CONFIG.PUBLIC_KEY.trim();
+            emailjs.init(cleanPublicKey);
+            console.log('EmailJS inițializat cu succes cu PUBLIC_KEY:', cleanPublicKey.substring(0, 10) + '...');
+        } catch (error) {
+            console.error('Eroare la inițializare EmailJS:', error);
+        }
     } else {
-        console.warn('EmailJS PUBLIC_KEY nu este configurat');
+        console.warn('EmailJS PUBLIC_KEY nu este configurat sau este gol');
     }
 }
 
@@ -174,8 +203,19 @@ async function isTimeSlotBooked(date, timeSlot) {
 // INITIALIZARE PAGINĂ
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Încarcă configurația EmailJS din variabilele de mediu Netlify
-    loadEmailJSConfig();
+    // Așteaptă ca EmailJS SDK să fie încărcat complet
+    function waitForEmailJS() {
+        if (typeof emailjs !== 'undefined') {
+            // EmailJS SDK este încărcat, încarcă configurația
+            loadEmailJSConfig();
+        } else {
+            // Așteaptă și încearcă din nou
+            setTimeout(waitForEmailJS, 100);
+        }
+    }
+    
+    // Așteaptă ca EmailJS SDK să fie disponibil
+    waitForEmailJS();
     
     initializeDatePicker();
     setupFormHandlers();
@@ -489,11 +529,16 @@ function submitToNetlify(form, formData, submitBtn) {
 }
 
 async function sendEmail(formData) {
+    // Verifică dacă EmailJS SDK este încărcat
+    if (typeof emailjs === 'undefined') {
+        return Promise.reject(new Error('EmailJS SDK nu este încărcat. Verificați că script-ul este inclus în bookings.html'));
+    }
+    
     // Așteaptă dacă configurația nu a fost încărcată
     if (!emailjsConfigLoaded) {
         await loadEmailJSConfig();
         // Așteaptă puțin pentru inițializare
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
     // Verifică dacă EmailJS este configurat
@@ -506,6 +551,16 @@ async function sendEmail(formData) {
     // Verifică dacă RECIPIENT_EMAIL este setat
     if (!RECIPIENT_EMAIL || RECIPIENT_EMAIL === '') {
         return Promise.reject(new Error('RECIPIENT_EMAIL nu este configurat. Verificați variabila de mediu RECIPIENT_EMAIL în Netlify.'));
+    }
+    
+    // Verifică dacă EmailJS este inițializat
+    // Reinițializează dacă este necesar
+    try {
+        const cleanPublicKey = EMAILJS_CONFIG.PUBLIC_KEY.trim();
+        emailjs.init(cleanPublicKey);
+    } catch (error) {
+        console.error('Eroare la reinițializare EmailJS:', error);
+        return Promise.reject(new Error('Eroare la inițializare EmailJS. Verificați că PUBLIC_KEY este corect.'));
     }
     
     // Formatează data pentru email
@@ -532,10 +587,21 @@ async function sendEmail(formData) {
         subject: `Nouă rezervare - ${formData.name} - ${formattedDate}`
     };
     
+    // Curăță și validează valorile înainte de trimitere
+    const cleanServiceId = EMAILJS_CONFIG.SERVICE_ID.trim();
+    const cleanTemplateId = EMAILJS_CONFIG.TEMPLATE_ID.trim();
+    
+    console.log('Trimitere email prin EmailJS:', {
+        serviceId: cleanServiceId,
+        templateId: cleanTemplateId,
+        recipientEmail: RECIPIENT_EMAIL,
+        publicKeyLength: EMAILJS_CONFIG.PUBLIC_KEY.trim().length
+    });
+    
     // Trimite email prin EmailJS
     return emailjs.send(
-        EMAILJS_CONFIG.SERVICE_ID,
-        EMAILJS_CONFIG.TEMPLATE_ID,
+        cleanServiceId,
+        cleanTemplateId,
         templateParams
     );
 }

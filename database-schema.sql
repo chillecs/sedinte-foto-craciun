@@ -6,7 +6,7 @@
 CREATE TABLE IF NOT EXISTS bookings (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
+    email VARCHAR(255),  -- Email opțional (NULL permis)
     phone VARCHAR(50) NOT NULL,
     details TEXT,
     date DATE NOT NULL,

@@ -20,12 +20,13 @@ exports.handler = async (event, context) => {
         const templateId = process.env.TEMPLATE_ID;
         const recipientEmail = process.env.RECIPIENT_EMAIL;
         
-        // Log pentru debugging (fără a expune valorile complete)
+        // Log pentru debugging
         console.log('Variabile de mediu EmailJS:', {
             hasPublicKey: !!publicKey,
             hasServiceId: !!serviceId,
             hasTemplateId: !!templateId,
             hasRecipientEmail: !!recipientEmail,
+            recipientEmail: recipientEmail || 'N/A', // Logăm email-ul pentru debugging
             publicKeyLength: publicKey ? publicKey.length : 0,
             publicKeyFirstChars: publicKey ? publicKey.substring(0, 10) + '...' : 'N/A',
             publicKeyLastChars: publicKey ? '...' + publicKey.substring(publicKey.length - 5) : 'N/A',

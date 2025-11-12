@@ -66,13 +66,17 @@ async function loadEmailJSConfig() {
         
         if (config.RECIPIENT_EMAIL) {
             RECIPIENT_EMAIL = config.RECIPIENT_EMAIL.trim();
+            console.log('✅ RECIPIENT_EMAIL încărcat:', RECIPIENT_EMAIL);
+        } else {
+            console.warn('⚠️ RECIPIENT_EMAIL nu este setat în configurație!');
         }
         
         console.log('Configurația EmailJS încărcată cu succes:', {
             hasPublicKey: !!EMAILJS_CONFIG.PUBLIC_KEY,
             hasServiceId: !!EMAILJS_CONFIG.SERVICE_ID,
             hasTemplateId: !!EMAILJS_CONFIG.TEMPLATE_ID,
-            hasRecipientEmail: !!RECIPIENT_EMAIL
+            hasRecipientEmail: !!RECIPIENT_EMAIL,
+            recipientEmail: RECIPIENT_EMAIL // Logăm email-ul complet pentru debugging
         });
         
         emailjsConfigLoaded = true;
@@ -446,10 +450,9 @@ function setupFormHandlers() {
         
         // Validează datele
         const name = document.getElementById('name').value.trim();
-        const email = document.getElementById('email').value.trim();
         const phone = document.getElementById('phone').value.trim();
         
-        if (!name || !email || !phone) {
+        if (!name || !phone) {
             showMessage('Vă rugăm să completați toate câmpurile obligatorii!', 'error');
             return;
         }
@@ -458,10 +461,9 @@ function setupFormHandlers() {
         document.getElementById('hiddenDate').value = selectedDate;
         document.getElementById('hiddenTimeSlot').value = selectedTimeSlot;
         
-        // Colectează datele pentru LocalStorage și EmailJS (dacă este configurat)
+        // Colectează datele pentru baza de date și EmailJS
         const formData = {
             name: name,
-            email: email,
             phone: phone,
             details: document.getElementById('details').value.trim(),
             date: selectedDate,
@@ -622,8 +624,7 @@ async function sendEmail(formData) {
     const templateParams = {
         to_email: RECIPIENT_EMAIL,                    // Email destinatar (din variabilă de mediu)
         to_name: 'Echipa Christmas Photoshoot',      // Nume destinatar
-        from_name: formData.name,                     // Nume client
-        from_email: formData.email,                   // Email client
+        from_name: formData.name,                     // Nume Facebook client
         phone: formData.phone,                        // Telefon client
         date: formattedDate,                          // Data formatată
         date_raw: formData.date,                      // Data în format raw (YYYY-MM-DD)

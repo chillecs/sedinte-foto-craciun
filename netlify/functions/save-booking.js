@@ -19,7 +19,7 @@ exports.handler = async (event, context) => {
         const bookingData = JSON.parse(event.body);
 
         // Validare date
-        if (!bookingData.date || !bookingData.timeSlot || !bookingData.name || !bookingData.email || !bookingData.phone) {
+        if (!bookingData.date || !bookingData.timeSlot || !bookingData.name || !bookingData.phone) {
             return {
                 statusCode: 400,
                 body: JSON.stringify({ error: 'Date incomplete' })
@@ -68,7 +68,7 @@ exports.handler = async (event, context) => {
         `;
         const insertResult = await pool.query(insertQuery, [
             bookingData.name,
-            bookingData.email,
+            bookingData.email || null, // Email opțional (NULL dacă nu este furnizat)
             bookingData.phone,
             bookingData.details || '',
             bookingData.date,

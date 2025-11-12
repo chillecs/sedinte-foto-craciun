@@ -5,20 +5,70 @@
 // ============================================
 // CONFIGURARE EMAILJS
 // ============================================
-// Pentru a configura EmailJS:
-// 1. Creați un cont pe https://www.emailjs.com/
-// 2. Adăugați un serviciu de email (Gmail, Outlook, etc.)
-// 3. Creați un template de email
-// 4. Înlocuiți valorile de mai jos cu ID-urile voastre:
-const EMAILJS_CONFIG = {
-    PUBLIC_KEY: 'YOUR_PUBLIC_KEY',        // Găsiți în Dashboard > Account > API Keys
-    SERVICE_ID: 'YOUR_SERVICE_ID',        // Găsiți în Dashboard > Email Services
-    TEMPLATE_ID: 'YOUR_TEMPLATE_ID'       // Găsiți în Dashboard > Email Templates
+// Configurația EmailJS este încărcată din variabilele de mediu Netlify
+// prin Netlify Function get-emailjs-config
+// Variabilele de mediu în Netlify: PUBLIC_KEY, SERVICE_ID, TEMPLATE_ID
+
+let EMAILJS_CONFIG = {
+    PUBLIC_KEY: '',
+    SERVICE_ID: '',
+    TEMPLATE_ID: ''
 };
 
-// Inițializare EmailJS
-// Decomentați linia de mai jos după ce ați configurat EmailJS:
-// emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
+let RECIPIENT_EMAIL = 'cryssthrill@gmail.com';
+
+// Flag pentru a verifica dacă configurația a fost încărcată
+let emailjsConfigLoaded = false;
+
+// ============================================
+// ÎNCĂRCARE CONFIGURARE EMAILJS DIN NETLIFY
+// ============================================
+async function loadEmailJSConfig() {
+    try {
+        const response = await fetch('/.netlify/functions/get-emailjs-config');
+        
+        if (!response.ok) {
+            console.warn('Nu s-a putut încărca configurația EmailJS din Netlify. Verificați că variabilele de mediu sunt setate.');
+            emailjsConfigLoaded = false;
+            return;
+        }
+        
+        const config = await response.json();
+        
+        if (config.error) {
+            console.error('Eroare la încărcare config EmailJS:', config.error);
+            emailjsConfigLoaded = false;
+            return;
+        }
+        
+        EMAILJS_CONFIG = {
+            PUBLIC_KEY: config.PUBLIC_KEY,
+            SERVICE_ID: config.SERVICE_ID,
+            TEMPLATE_ID: config.TEMPLATE_ID
+        };
+        
+        if (config.RECIPIENT_EMAIL) {
+            RECIPIENT_EMAIL = config.RECIPIENT_EMAIL;
+        }
+        
+        emailjsConfigLoaded = true;
+        initializeEmailJS();
+        
+    } catch (error) {
+        console.error('Eroare la încărcare configurație EmailJS:', error);
+        emailjsConfigLoaded = false;
+    }
+}
+
+// Inițializare EmailJS după ce configurația este încărcată
+function initializeEmailJS() {
+    if (EMAILJS_CONFIG.PUBLIC_KEY && EMAILJS_CONFIG.PUBLIC_KEY !== 'YOUR_PUBLIC_KEY' && EMAILJS_CONFIG.PUBLIC_KEY !== '') {
+        emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
+        console.log('EmailJS inițializat cu succes');
+    } else {
+        console.warn('EmailJS PUBLIC_KEY nu este configurat');
+    }
+}
 
 // ============================================
 // CONFIGURARE ORE DISPONIBILE
@@ -124,6 +174,9 @@ async function isTimeSlotBooked(date, timeSlot) {
 // INITIALIZARE PAGINĂ
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
+    // Încarcă configurația EmailJS din variabilele de mediu Netlify
+    loadEmailJSConfig();
+    
     initializeDatePicker();
     setupFormHandlers();
 });
@@ -406,13 +459,18 @@ function submitToNetlify(form, formData, submitBtn) {
     })
     .then(() => {
         // Succes - Netlify va procesa formularul
-        showMessage('Rezervarea a fost trimisă cu succes! Veți primi un email de confirmare în curând.', 'success');
-        resetFormAfterSuccess();
-        
-        // Opțional: trimite și prin EmailJS dacă este configurat (pentru backup)
-        sendEmail(formData).catch(err => {
-            console.log('EmailJS nu este configurat sau a eșuat, dar Netlify Forms a funcționat:', err);
-        });
+        // Trimite email prin EmailJS la cryssthrill@gmail.com
+        sendEmail(formData)
+            .then(() => {
+                showMessage('Rezervarea a fost trimisă cu succes! Veți primi un email de confirmare în curând.', 'success');
+                resetFormAfterSuccess();
+            })
+            .catch((err) => {
+                console.error('Eroare la trimiterea email-ului:', err);
+                // Rezervarea a fost salvată în Neon și Netlify, dar email-ul nu s-a trimis
+                showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului.', 'error');
+                resetFormAfterSuccess();
+            });
     })
     .catch((error) => {
         console.error('Eroare la trimiterea la Netlify:', error);
@@ -430,32 +488,51 @@ function submitToNetlify(form, formData, submitBtn) {
     });
 }
 
-function sendEmail(formData) {
-    // NOTĂ: Decomentați și configurați după ce ați setat EmailJS
-    /*
+async function sendEmail(formData) {
+    // Așteaptă dacă configurația nu a fost încărcată
+    if (!emailjsConfigLoaded) {
+        await loadEmailJSConfig();
+        // Așteaptă puțin pentru inițializare
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    // Verifică dacă EmailJS este configurat
+    if (!EMAILJS_CONFIG.PUBLIC_KEY || EMAILJS_CONFIG.PUBLIC_KEY === '' ||
+        !EMAILJS_CONFIG.SERVICE_ID || EMAILJS_CONFIG.SERVICE_ID === '' ||
+        !EMAILJS_CONFIG.TEMPLATE_ID || EMAILJS_CONFIG.TEMPLATE_ID === '') {
+        return Promise.reject(new Error('EmailJS nu este configurat. Verificați variabilele de mediu în Netlify (PUBLIC_KEY, SERVICE_ID, TEMPLATE_ID).'));
+    }
+    
+    // Formatează data pentru email
+    const dateObj = new Date(formData.date);
+    const formattedDate = dateObj.toLocaleDateString('ro-RO', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    // Parametrii pentru template-ul EmailJS
     const templateParams = {
-        to_name: 'Echipa Christmas Photoshoot',
-        from_name: formData.name,
-        from_email: formData.email,
-        phone: formData.phone,
-        date: formData.date,
-        time_slot: formData.timeSlot,
+        to_email: RECIPIENT_EMAIL,                    // Email destinatar
+        to_name: 'Echipa Christmas Photoshoot',      // Nume destinatar
+        from_name: formData.name,                     // Nume client
+        from_email: formData.email,                   // Email client
+        phone: formData.phone,                        // Telefon client
+        date: formattedDate,                          // Data formatată
+        date_raw: formData.date,                      // Data în format raw (YYYY-MM-DD)
+        time_slot: formData.timeSlot,                  // Slot de timp
         details: formData.details || 'Nu au fost furnizate detalii suplimentare',
-        message: `Nouă rezervare pentru ${formData.date} la ${formData.timeSlot}`
+        message: `Nouă rezervare pentru ${formattedDate} la ${formData.timeSlot}`,
+        subject: `Nouă rezervare - ${formData.name} - ${formattedDate}`
     };
     
+    // Trimite email prin EmailJS
     return emailjs.send(
         EMAILJS_CONFIG.SERVICE_ID,
         EMAILJS_CONFIG.TEMPLATE_ID,
         templateParams
     );
-    */
-    
-    // Simulare pentru testare (eliminați după configurarea EmailJS)
-    return new Promise((resolve) => {
-        console.log('Simulare trimitere email cu datele:', formData);
-        setTimeout(resolve, 1000);
-    });
 }
 
 function resetFormAfterSuccess() {

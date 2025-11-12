@@ -38,19 +38,20 @@ Pentru a activa trimiterea email-urilor:
    - Mergeți la Dashboard > Account > API Keys
    - Copiați `Public Key`
 
-5. **Actualizați configurația** în `js/bookings.js`:
-   ```javascript
-   const EMAILJS_CONFIG = {
-       PUBLIC_KEY: 'YOUR_PUBLIC_KEY',
-       SERVICE_ID: 'YOUR_SERVICE_ID',
-       TEMPLATE_ID: 'YOUR_TEMPLATE_ID'
-   };
-   ```
-6. **Decomentați inițializarea EmailJS** în `js/bookings.js`:
-   ```javascript
-   emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
-   ```
-7. **Decomentați funcția `sendEmail()`** în `js/bookings.js` (eliminați simularea)
+5. **Configurați variabilele de mediu în Netlify:**
+   
+   **După ce site-ul este linkat cu Netlify:**
+   - În **Netlify Dashboard** > Selectați site-ul
+   - Mergeți la **Site settings** > **Environment variables**
+   - Adăugați următoarele variabile:
+     - **Key**: `PUBLIC_KEY` → **Value**: `valoarea ta`
+     - **Key**: `SERVICE_ID` → **Value**: `valoarea ta`
+     - **Key**: `TEMPLATE_ID` → **Value**: `valoarea ta`
+     - **Key**: `RECIPIENT_EMAIL` → **Value**: `valoarea ta`
+   - Click **Save** pentru fiecare variabilă
+   - **Redeploy** site-ul pentru a aplica modificările
+   
+   **Notă:** Configurația EmailJS se încarcă automat din variabilele de mediu prin Netlify Function `get-emailjs-config`. Nu mai este nevoie să editați manual `js/bookings.js`.
 
 ### 2. Adăugare Imagini
 

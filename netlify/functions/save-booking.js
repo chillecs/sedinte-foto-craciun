@@ -63,7 +63,7 @@ exports.handler = async (event, context) => {
         // Inserează rezervarea
         const insertQuery = `
             INSERT INTO bookings (name, phone, details, date, time_slot, booked_at)
-            VALUES ($1, $2, $3, $4, $5, $6, NOW())
+            VALUES ($1, $2, $3, $4, $5, NOW())
             RETURNING id
         `;
         const insertResult = await pool.query(insertQuery, [

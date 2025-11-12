@@ -506,12 +506,12 @@ async function submitBooking(formData) {
         // Fallback: trimite prin EmailJS dacă este configurat
         sendEmail(formData)
             .then(() => {
-                showMessage('Rezervarea a fost trimisă cu succes! Veți primi un email de confirmare în curând.', 'success');
+                showMessage('Rezervarea a fost trimisă cu succes! Va vom contacta in cel mai scurt timp posibil pe Facebook!', 'success');
                 resetFormAfterSuccess();
             })
             .catch((error) => {
                 console.error('Eroare la trimiterea email-ului:', error);
-                showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului. Vă rugăm să ne contactați direct.', 'error');
+                showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului de confirmare catre noi. Vă rugăm să ne contactați direct pe Facebook!', 'error');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Rezervează';
             });
@@ -536,13 +536,13 @@ function submitToNetlify(form, formData, submitBtn) {
         // Trimite email prin EmailJS
         sendEmail(formData)
             .then(() => {
-                showMessage('Rezervarea a fost trimisă cu succes! Veți primi un email de confirmare în curând.', 'success');
+                showMessage('Rezervarea a fost trimisă cu succes! Va vom contacta in cel mai scurt timp posibil pe Facebook!', 'success');
                 resetFormAfterSuccess();
             })
             .catch((err) => {
                 console.error('Eroare la trimiterea email-ului:', err);
                 // Rezervarea a fost salvată în Neon și Netlify, dar email-ul nu s-a trimis
-                showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului.', 'error');
+                showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului de confirmare catre noi. Vă rugăm să ne contactați direct pe Facebook!', 'error');
                 resetFormAfterSuccess();
             });
     })
@@ -551,7 +551,7 @@ function submitToNetlify(form, formData, submitBtn) {
         // Fallback: încearcă EmailJS dacă este disponibil
         sendEmail(formData)
             .then(() => {
-                showMessage('Rezervarea a fost trimisă prin email alternativ!', 'success');
+                showMessage('Rezervarea a fost trimisă prin email catre noi! Va vom contacta in cel mai scurt timp posibil pe Facebook!', 'success');
                 resetFormAfterSuccess();
             })
             .catch(() => {

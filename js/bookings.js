@@ -89,20 +89,45 @@ function initializeEmailJS() {
     // Verifică dacă EmailJS SDK este încărcat
     if (typeof emailjs === 'undefined') {
         console.error('EmailJS SDK nu este încărcat! Verificați că script-ul este inclus în bookings.html');
-        return;
+        return false;
     }
     
     if (EMAILJS_CONFIG.PUBLIC_KEY && EMAILJS_CONFIG.PUBLIC_KEY.trim() !== '') {
         try {
             // Curăță public key-ul de spații și caractere invizibile
-            const cleanPublicKey = EMAILJS_CONFIG.PUBLIC_KEY.trim();
+            const cleanPublicKey = EMAILJS_CONFIG.PUBLIC_KEY.trim().replace(/\s+/g, '');
+            
+            // Verifică formatul public key-ului (ar trebui să fie alfanumeric, fără spații)
+            if (cleanPublicKey.length < 10) {
+                console.error('PUBLIC_KEY pare prea scurt:', cleanPublicKey.length, 'caractere');
+                return false;
+            }
+            
+        console.log('Inițializare EmailJS cu PUBLIC_KEY:', {
+            originalLength: EMAILJS_CONFIG.PUBLIC_KEY.length,
+            cleanedLength: cleanPublicKey.length,
+            fullKey: cleanPublicKey, // Logăm key-ul complet pentru debugging
+            firstChars: cleanPublicKey.substring(0, 10),
+            lastChars: cleanPublicKey.substring(cleanPublicKey.length - 5),
+            hasSpaces: cleanPublicKey.includes(' '),
+            hasSpecialChars: /[^a-zA-Z0-9]/.test(cleanPublicKey)
+        });
+            
             emailjs.init(cleanPublicKey);
-            console.log('EmailJS inițializat cu succes cu PUBLIC_KEY:', cleanPublicKey.substring(0, 10) + '...');
+            console.log('✅ EmailJS inițializat cu succes!');
+            return true;
         } catch (error) {
-            console.error('Eroare la inițializare EmailJS:', error);
+            console.error('❌ Eroare la inițializare EmailJS:', error);
+            console.error('Detalii eroare:', {
+                message: error.message,
+                stack: error.stack,
+                publicKeyLength: EMAILJS_CONFIG.PUBLIC_KEY ? EMAILJS_CONFIG.PUBLIC_KEY.length : 0
+            });
+            return false;
         }
     } else {
         console.warn('EmailJS PUBLIC_KEY nu este configurat sau este gol');
+        return false;
     }
 }
 
@@ -563,10 +588,24 @@ async function sendEmail(formData) {
     // Verifică dacă EmailJS este inițializat
     // Reinițializează dacă este necesar
     try {
-        const cleanPublicKey = EMAILJS_CONFIG.PUBLIC_KEY.trim();
+        const cleanPublicKey = EMAILJS_CONFIG.PUBLIC_KEY.trim().replace(/\s+/g, '');
+        
+        console.log('Reinițializare EmailJS înainte de trimitere:', {
+            publicKeyLength: cleanPublicKey.length,
+            firstChars: cleanPublicKey.substring(0, 15) + '...'
+        });
+        
         emailjs.init(cleanPublicKey);
+        
+        // Verifică dacă inițializarea a reușit
+        // EmailJS v4 nu aruncă eroare la init dacă key-ul este invalid, dar va arunca la send
+        console.log('EmailJS reinițializat, pregătit pentru trimitere');
     } catch (error) {
-        console.error('Eroare la reinițializare EmailJS:', error);
+        console.error('❌ Eroare la reinițializare EmailJS:', error);
+        console.error('Detalii:', {
+            message: error.message,
+            publicKeyLength: EMAILJS_CONFIG.PUBLIC_KEY ? EMAILJS_CONFIG.PUBLIC_KEY.length : 0
+        });
         return Promise.reject(new Error('Eroare la inițializare EmailJS. Verificați că PUBLIC_KEY este corect.'));
     }
     
@@ -597,20 +636,48 @@ async function sendEmail(formData) {
     // Curăță și validează valorile înainte de trimitere
     const cleanServiceId = EMAILJS_CONFIG.SERVICE_ID.trim();
     const cleanTemplateId = EMAILJS_CONFIG.TEMPLATE_ID.trim();
+    const cleanPublicKey = EMAILJS_CONFIG.PUBLIC_KEY.trim().replace(/\s+/g, '');
     
-    console.log('Trimitere email prin EmailJS:', {
+    console.log('📧 Trimitere email prin EmailJS:', {
         serviceId: cleanServiceId,
         templateId: cleanTemplateId,
         recipientEmail: RECIPIENT_EMAIL,
-        publicKeyLength: EMAILJS_CONFIG.PUBLIC_KEY.trim().length
+        publicKeyLength: cleanPublicKey.length,
+        publicKeyPreview: cleanPublicKey.substring(0, 15) + '...'
     });
     
-    // Trimite email prin EmailJS
-    return emailjs.send(
-        cleanServiceId,
-        cleanTemplateId,
-        templateParams
-    );
+    // Trimite email prin EmailJS cu gestionare detaliată a erorilor
+    try {
+        const result = await emailjs.send(
+            cleanServiceId,
+            cleanTemplateId,
+            templateParams
+        );
+        console.log('✅ Email trimis cu succes:', result);
+        return result;
+    } catch (error) {
+        console.error('❌ Eroare la trimitere email prin EmailJS:', error);
+        console.error('Detalii eroare:', {
+            status: error.status,
+            text: error.text,
+            message: error.message,
+            publicKeyLength: cleanPublicKey.length,
+            publicKeyPreview: cleanPublicKey.substring(0, 15) + '...',
+            serviceId: cleanServiceId,
+            templateId: cleanTemplateId
+        });
+        
+        // Mesaje de eroare mai clare
+        if (error.text && error.text.includes('Invalid public key')) {
+            throw new Error('PUBLIC_KEY invalid. Verificați că ați copiat corect Public Key din EmailJS Dashboard > Account > API Keys. Asigurați-vă că folosiți Public Key (nu Private Key).');
+        } else if (error.text && error.text.includes('Invalid service ID')) {
+            throw new Error('SERVICE_ID invalid. Verificați că SERVICE_ID este corect în variabilele de mediu Netlify.');
+        } else if (error.text && error.text.includes('Invalid template ID')) {
+            throw new Error('TEMPLATE_ID invalid. Verificați că TEMPLATE_ID este corect în variabilele de mediu Netlify.');
+        } else {
+            throw new Error(`Eroare EmailJS: ${error.text || error.message || 'Eroare necunoscută'}`);
+        }
+    }
 }
 
 function resetFormAfterSuccess() {

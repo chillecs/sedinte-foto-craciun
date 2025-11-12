@@ -26,7 +26,11 @@ exports.handler = async (event, context) => {
             hasServiceId: !!serviceId,
             hasTemplateId: !!templateId,
             hasRecipientEmail: !!recipientEmail,
-            publicKeyLength: publicKey ? publicKey.length : 0
+            publicKeyLength: publicKey ? publicKey.length : 0,
+            publicKeyFirstChars: publicKey ? publicKey.substring(0, 10) + '...' : 'N/A',
+            publicKeyLastChars: publicKey ? '...' + publicKey.substring(publicKey.length - 5) : 'N/A',
+            publicKeyHasSpaces: publicKey ? publicKey.includes(' ') : false,
+            publicKeyTrimmedLength: publicKey ? publicKey.trim().length : 0
         });
         
         const config = {

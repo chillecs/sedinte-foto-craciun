@@ -26,8 +26,20 @@ exports.handler = async (event, context) => {
         }
 
         // Conectare la Neon
+        // Extensia Neon creează NETLIFY_DATABASE_URL
+        const connectionString = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
+        
+        if (!connectionString) {
+            return {
+                statusCode: 500,
+                body: JSON.stringify({ 
+                    error: 'DATABASE_URL nu este configurat. Verificați variabilele de mediu în Netlify.' 
+                })
+            };
+        }
+        
         const pool = new Pool({
-            connectionString: process.env.DATABASE_URL
+            connectionString: connectionString
         });
 
         // Verifică dacă slotul este rezervat

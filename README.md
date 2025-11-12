@@ -155,18 +155,37 @@ Pentru a activa trimiterea email-urilor:
 ### Pasul 4: Configurare Neon în Netlify
 
 **Opțiunea A - Extensia Neon (Recomandat):**
-1. În **Netlify Dashboard** > **Site settings** > **Extensions**
-2. Căutați "Neon" și instalați extensia
-3. Conectați-vă contul Neon
-4. Selectați proiectul și baza de date
-5. Extensia va configura automat `DATABASE_URL`
+1. În **Netlify Dashboard** > Selectează site-ul tău
+2. Mergeți la **Site settings** (în meniul de sus)
+3. Click pe **Extensions** (în meniul din stânga)
+4. Căutați "Neon" și click pe **Install**
+5. Conectați-vă contul Neon
+6. Selectați proiectul și baza de date
+7. Extensia va configura automat `DATABASE_URL`
 
-**Opțiunea B - Variabilă de mediu manuală:**
-1. În **Netlify Dashboard** > **Site settings** > **Environment variables**
-2. Click "Add variable"
-3. Nume: `DATABASE_URL`
-4. Valoare: connection string-ul Neon (copiat din Pasul 2)
-5. Click "Save"
+**Opțiunea B - Variabilă de mediu manuală (Dacă extensia nu funcționează):**
+
+1. **Obțineți connection string-ul din Neon:**
+   - Deschideți **Neon Dashboard** > Selectați proiectul
+   - Click pe **Connection Details**
+   - Copiați **Connection string** (format: `postgresql://user:password@host/database`)
+
+2. **Adăugați în Netlify:**
+   - În **Netlify Dashboard** > Selectați site-ul
+   - Mergeți la **Site settings** (în meniul de sus)
+   - Click pe **Environment variables** (în meniul din stânga)
+   - Click pe butonul **Add variable** (sau **Add a variable**)
+   - **Key**: `NETLIFY_DATABASE_URL` sau `DATABASE_URL` (ambele funcționează)
+   - **Value**: Lipește connection string-ul copiat din Neon
+   - **Scopes**: Selectați **All scopes** (sau doar **Production** dacă vrei doar pentru producție)
+   - Click **Save**
+
+**Notă:** Extensia Neon creează automat `NETLIFY_DATABASE_URL`. Codul acceptă ambele variabile (`NETLIFY_DATABASE_URL` sau `DATABASE_URL`).
+
+3. **Redeploy site-ul:**
+   - După adăugarea variabilei, mergeți la **Deploys**
+   - Click pe **Trigger deploy** > **Clear cache and deploy site**
+   - Sau faceți un commit nou în Git pentru a declanșa deploy automat
 
 ### Pasul 5: Instalați Dependențele Local
 

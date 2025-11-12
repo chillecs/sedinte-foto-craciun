@@ -15,13 +15,15 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        // Verifică dacă DATABASE_URL este configurat
-        if (!process.env.DATABASE_URL) {
-            console.error('DATABASE_URL nu este configurat');
+        // Obține connection string-ul (extensia Neon creează NETLIFY_DATABASE_URL)
+        const connectionString = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
+        
+        if (!connectionString) {
+            console.error('DATABASE_URL sau NETLIFY_DATABASE_URL nu este configurat');
             return {
                 statusCode: 500,
                 body: JSON.stringify({ 
-                    error: 'DATABASE_URL nu este configurat. Verificați variabilele de mediu în Netlify.' 
+                    error: 'DATABASE_URL nu este configurat. Verificați variabilele de mediu în Netlify (NETLIFY_DATABASE_URL sau DATABASE_URL).' 
                 })
             };
         }
@@ -38,7 +40,7 @@ exports.handler = async (event, context) => {
 
         // Conectare la Neon
         const pool = new Pool({
-            connectionString: process.env.DATABASE_URL
+            connectionString: connectionString
         });
 
         // Obține toate rezervările pentru data specificată

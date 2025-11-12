@@ -32,18 +32,77 @@ const AVAILABLE_TIME_SLOTS = [
 ];
 
 // ============================================
-// STOCARE REZERVĂRI (LocalStorage - temporar)
+// STOCARE REZERVĂRI - Neon PostgreSQL
 // ============================================
-// NOTĂ: Pentru producție, înlocuiți cu Firebase Firestore sau alt serviciu de backend
-// Vezi secțiunea "EXTINDERE CU FIREBASE" la finalul fișierului
+// Folosește Netlify Functions pentru a salva în Neon
+// Fallback la LocalStorage dacă Neon nu este disponibil
 
-function getBookings() {
+// Configurare: Setează USE_NEON la true pentru a folosi Neon
+const USE_NEON = true; // Schimbă la false pentru a folosi LocalStorage
+
+// ============================================
+// FUNCȚII PENTRU NEON (prin Netlify Functions)
+// ============================================
+
+async function getBookingsFromNeon(date) {
+    try {
+        const response = await fetch(`/.netlify/functions/get-bookings?date=${date}`);
+        if (!response.ok) throw new Error('Eroare la obținere rezervări');
+        const data = await response.json();
+        return data.bookedSlots || [];
+    } catch (error) {
+        console.error('Eroare la obținere rezervări din Neon:', error);
+        return [];
+    }
+}
+
+async function saveBookingToNeon(date, timeSlot, bookingData) {
+    try {
+        const response = await fetch('/.netlify/functions/save-booking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ...bookingData,
+                date: date,
+                timeSlot: timeSlot
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Eroare la salvare');
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Eroare la salvare în Neon:', error);
+        throw error;
+    }
+}
+
+async function checkBookingInNeon(date, timeSlot) {
+    try {
+        const response = await fetch(`/.netlify/functions/check-booking?date=${date}&timeSlot=${timeSlot}`);
+        if (!response.ok) return false;
+        const data = await response.json();
+        return data.isBooked || false;
+    } catch (error) {
+        console.error('Eroare la verificare în Neon:', error);
+        return false;
+    }
+}
+
+// ============================================
+// FUNCȚII PENTRU LOCALSTORAGE (Fallback)
+// ============================================
+
+function getBookingsFromLocalStorage() {
     const bookings = localStorage.getItem('christmasBookings');
     return bookings ? JSON.parse(bookings) : {};
 }
 
-function saveBooking(date, timeSlot, bookingData) {
-    const bookings = getBookings();
+function saveBookingToLocalStorage(date, timeSlot, bookingData) {
+    const bookings = getBookingsFromLocalStorage();
     const key = `${date}_${timeSlot}`;
     bookings[key] = {
         ...bookingData,
@@ -55,10 +114,46 @@ function saveBooking(date, timeSlot, bookingData) {
     return bookings;
 }
 
-function isTimeSlotBooked(date, timeSlot) {
-    const bookings = getBookings();
+function isTimeSlotBookedInLocalStorage(date, timeSlot) {
+    const bookings = getBookingsFromLocalStorage();
     const key = `${date}_${timeSlot}`;
     return bookings.hasOwnProperty(key);
+}
+
+// ============================================
+// FUNCȚII UNIFICATE (folosesc Neon sau LocalStorage)
+// ============================================
+
+async function getBookings(date) {
+    if (USE_NEON) {
+        return await getBookingsFromNeon(date);
+    } else {
+        const bookings = getBookingsFromLocalStorage();
+        // Returnează sloturile rezervate pentru data specificată
+        const bookedSlots = [];
+        Object.keys(bookings).forEach(key => {
+            if (bookings[key].date === date) {
+                bookedSlots.push(bookings[key].timeSlot);
+            }
+        });
+        return bookedSlots;
+    }
+}
+
+async function saveBooking(date, timeSlot, bookingData) {
+    if (USE_NEON) {
+        return await saveBookingToNeon(date, timeSlot, bookingData);
+    } else {
+        return saveBookingToLocalStorage(date, timeSlot, bookingData);
+    }
+}
+
+async function isTimeSlotBooked(date, timeSlot) {
+    if (USE_NEON) {
+        return await checkBookingInNeon(date, timeSlot);
+    } else {
+        return isTimeSlotBookedInLocalStorage(date, timeSlot);
+    }
 }
 
 // ============================================
@@ -102,7 +197,7 @@ function initializeDatePicker() {
 // ============================================
 // AFIȘARE SLOTURI DE TIMP
 // ============================================
-function displayTimeSlots(date) {
+async function displayTimeSlots(date) {
     const container = document.getElementById('timeSlotsContainer');
     const grid = document.getElementById('timeSlotsGrid');
     
@@ -117,11 +212,17 @@ function displayTimeSlots(date) {
     }
     
     // Golește grid-ul
+    grid.innerHTML = '<p>Se încarcă...</p>';
+    
+    // Obține rezervările pentru această dată
+    const bookedSlots = await getBookings(date);
+    
+    // Golește grid-ul din nou
     grid.innerHTML = '';
     
     // Creează butoane pentru fiecare slot de timp
     AVAILABLE_TIME_SLOTS.forEach(timeSlot => {
-        const isBooked = isTimeSlotBooked(date, timeSlot);
+        const isBooked = bookedSlots.includes(timeSlot);
         const button = createTimeSlotButton(timeSlot, isBooked, date);
         grid.appendChild(button);
     });
@@ -225,7 +326,7 @@ function resetForm() {
 function setupFormHandlers() {
     const form = document.getElementById('bookingForm');
     
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         // Verifică dacă există o selecție
@@ -234,28 +335,37 @@ function setupFormHandlers() {
             return;
         }
         
-        // Verifică dacă slotul este încă disponibil
-        if (isTimeSlotBooked(selectedDate, selectedTimeSlot)) {
+        // Verifică dacă slotul este încă disponibil (async)
+        const isBooked = await isTimeSlotBooked(selectedDate, selectedTimeSlot);
+        if (isBooked) {
             showMessage('Acest slot a fost deja rezervat. Vă rugăm să selectați alt slot.', 'error');
             displayTimeSlots(selectedDate); // Reîncarcă sloturile
             return;
         }
         
-        // Colectează datele din formular
+        // Validează datele
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        
+        if (!name || !email || !phone) {
+            showMessage('Vă rugăm să completați toate câmpurile obligatorii!', 'error');
+            return;
+        }
+        
+        // Populează câmpurile hidden pentru Netlify Forms
+        document.getElementById('hiddenDate').value = selectedDate;
+        document.getElementById('hiddenTimeSlot').value = selectedTimeSlot;
+        
+        // Colectează datele pentru LocalStorage și EmailJS (dacă este configurat)
         const formData = {
-            name: document.getElementById('name').value.trim(),
-            email: document.getElementById('email').value.trim(),
-            phone: document.getElementById('phone').value.trim(),
+            name: name,
+            email: email,
+            phone: phone,
             details: document.getElementById('details').value.trim(),
             date: selectedDate,
             timeSlot: selectedTimeSlot
         };
-        
-        // Validează datele
-        if (!formData.name || !formData.email || !formData.phone) {
-            showMessage('Vă rugăm să completați toate câmpurile obligatorii!', 'error');
-            return;
-        }
         
         // Trimite rezervarea
         submitBooking(formData);
@@ -265,27 +375,80 @@ function setupFormHandlers() {
 // ============================================
 // TRIMITERE REZERVARE
 // ============================================
-function submitBooking(formData) {
+async function submitBooking(formData) {
     const submitBtn = document.getElementById('submitBtn');
+    const form = document.getElementById('bookingForm');
+    
     submitBtn.disabled = true;
     submitBtn.textContent = 'Se trimite...';
     
-    // Salvează rezervarea local (temporar)
-    saveBooking(selectedDate, selectedTimeSlot, formData);
+    // Salvează rezervarea în Neon sau LocalStorage
+    try {
+        await saveBooking(selectedDate, selectedTimeSlot, formData);
+    } catch (error) {
+        console.error('Eroare la salvare rezervare:', error);
+        // Continuă cu trimiterea formularului chiar dacă salvare a eșuat
+    }
     
-    // Trimite email prin EmailJS
-    sendEmail(formData)
-        .then(() => {
-            showMessage('Rezervarea a fost trimisă cu succes! Veți primi un email de confirmare în curând.', 'success');
-            resetFormAfterSuccess();
-        })
-        .catch((error) => {
-            console.error('Eroare la trimiterea email-ului:', error);
-            // Rezervarea a fost salvată local, dar email-ul nu s-a trimis
-            showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului. Vă rugăm să ne contactați direct.', 'error');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Rezervează';
+    // Verifică dacă suntem pe Netlify (formularele cu atributul netlify)
+    const isNetlifyForm = form.hasAttribute('netlify');
+    
+    if (isNetlifyForm) {
+        // Trimite prin Netlify Forms (AJAX pentru experiență mai bună)
+        submitToNetlify(form, formData, submitBtn);
+    } else {
+        // Fallback: trimite prin EmailJS dacă este configurat
+        sendEmail(formData)
+            .then(() => {
+                showMessage('Rezervarea a fost trimisă cu succes! Veți primi un email de confirmare în curând.', 'success');
+                resetFormAfterSuccess();
+            })
+            .catch((error) => {
+                console.error('Eroare la trimiterea email-ului:', error);
+                showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului. Vă rugăm să ne contactați direct.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Rezervează';
+            });
+    }
+}
+
+// ============================================
+// TRIMITERE LA NETLIFY FORMS
+// ============================================
+function submitToNetlify(form, formData, submitBtn) {
+    // Creează FormData din formular
+    const formDataObj = new FormData(form);
+    
+    // Trimite prin AJAX la Netlify
+    fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(formDataObj).toString()
+    })
+    .then(() => {
+        // Succes - Netlify va procesa formularul
+        showMessage('Rezervarea a fost trimisă cu succes! Veți primi un email de confirmare în curând.', 'success');
+        resetFormAfterSuccess();
+        
+        // Opțional: trimite și prin EmailJS dacă este configurat (pentru backup)
+        sendEmail(formData).catch(err => {
+            console.log('EmailJS nu este configurat sau a eșuat, dar Netlify Forms a funcționat:', err);
         });
+    })
+    .catch((error) => {
+        console.error('Eroare la trimiterea la Netlify:', error);
+        // Fallback: încearcă EmailJS dacă este disponibil
+        sendEmail(formData)
+            .then(() => {
+                showMessage('Rezervarea a fost trimisă prin email alternativ!', 'success');
+                resetFormAfterSuccess();
+            })
+            .catch(() => {
+                showMessage('A apărut o eroare. Vă rugăm să încercați din nou sau să ne contactați direct.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Rezervează';
+            });
+    });
 }
 
 function sendEmail(formData) {

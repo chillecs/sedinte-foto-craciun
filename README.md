@@ -66,10 +66,25 @@ Pentru a activa trimiterea email-urilor:
 
 ### 3. Publicare pe Netlify sau Vercel
 
-#### Netlify:
-1. Conectați repository-ul GitHub/GitLab
-2. Netlify va detecta automat site-ul static
-3. Site-ul va fi live imediat
+#### Netlify (Recomandat - Netlify Forms inclus):
+1. **Conectați repository-ul GitHub/GitLab** sau încărcați manual
+2. **Netlify va detecta automat site-ul static**
+3. **Site-ul va fi live imediat**
+4. **Netlify Forms funcționează automat!** 
+   - Formularele vor fi procesate automat de Netlify
+   - Veți primi notificări email pentru fiecare rezervare
+   - Datele vor fi salvate în dashboard-ul Netlify (Site settings > Forms)
+   - Poți configura notificări email în Netlify Dashboard > Forms > Settings
+
+**⚠️ NOTĂ IMPORTANTĂ:** După ce site-ul este linkat cu Netlify, puteți continua cu configurarea Neon PostgreSQL (vezi secțiunea "Configurare Neon PostgreSQL").
+
+**Avantaje Netlify Forms:**
+- ✅ Nu necesită configurare EmailJS
+- ✅ Funcționează automat când site-ul este pe Netlify
+- ✅ Datele sunt salvate în dashboard-ul Netlify
+- ✅ Protecție anti-spam integrată (honeypot)
+- ✅ Notificări email configurabile
+- ✅ Export date în CSV/JSON
 
 ## ✨ Funcționalități
 
@@ -92,12 +107,97 @@ Pentru a activa trimiterea email-urilor:
   - 20:00-21:00
 - **Formular**: Nume, Email, Telefon, Detalii
 - **Validare**: Verificare disponibilitate în timp real
-- **EmailJS**: Trimitere automată de email la rezervare
-- **Stocare**: Rezervările sunt salvate în LocalStorage (temporar)
+- **Netlify Forms**: Trimitere automată prin Netlify (când site-ul este pe Netlify)
+- **EmailJS**: Fallback opțional pentru trimitere email (dacă este configurat)
+- **Stocare**: Rezervările sunt salvate în Neon PostgreSQL (sau LocalStorage ca fallback)
 
-## 🔧 Extindere cu Firebase Firestore
+## 🗄️ Configurare Neon PostgreSQL (Recomandat)
 
-Pentru a salva rezervările online (în loc de LocalStorage):
+**IMPORTANT:** Proiectul trebuie să fie linkat cu Netlify înainte de a configura baza de date!
+
+### Pasul 1: Linkează Proiectul cu Netlify (OBLIGATORIU ÎNAINTE)
+
+1. **Creați un site Netlify:**
+   - Mergeți pe [Netlify](https://app.netlify.com/)
+   - Click pe "Add new site" > "Import an existing project"
+   - Conectați repository-ul GitHub/GitLab sau încărcați manual
+   - Netlify va face deploy automat
+
+2. **Verificați că site-ul este live:**
+   - Site-ul ar trebui să fie accesibil pe URL-ul Netlify
+   - Netlify Functions trebuie să fie disponibile (verificați în Deploys > Functions)
+
+### Pasul 2: Creați Cont Neon
+
+1. **Creați un cont** pe [Neon](https://neon.tech/)
+2. **Creați un proiect nou** și o bază de date
+3. **Copiați connection string-ul** (format: `postgresql://user:password@host/database`)
+   - Găsiți-l în Neon Dashboard > Connection Details
+
+### Pasul 3: Creați Tabelul în Neon
+
+1. Deschideți **Neon Console** > **SQL Editor**
+2. Rulați scriptul din `database-schema.sql`:
+   ```sql
+   CREATE TABLE IF NOT EXISTS bookings (
+       id SERIAL PRIMARY KEY,
+       name VARCHAR(255) NOT NULL,
+       email VARCHAR(255) NOT NULL,
+       phone VARCHAR(50) NOT NULL,
+       details TEXT,
+       date DATE NOT NULL,
+       time_slot VARCHAR(50) NOT NULL,
+       booked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+       UNIQUE(date, time_slot)
+   );
+   ```
+
+### Pasul 4: Configurare Neon în Netlify
+
+**Opțiunea A - Extensia Neon (Recomandat):**
+1. În **Netlify Dashboard** > **Site settings** > **Extensions**
+2. Căutați "Neon" și instalați extensia
+3. Conectați-vă contul Neon
+4. Selectați proiectul și baza de date
+5. Extensia va configura automat `DATABASE_URL`
+
+**Opțiunea B - Variabilă de mediu manuală:**
+1. În **Netlify Dashboard** > **Site settings** > **Environment variables**
+2. Click "Add variable"
+3. Nume: `DATABASE_URL`
+4. Valoare: connection string-ul Neon (copiat din Pasul 2)
+5. Click "Save"
+
+### Pasul 5: Instalați Dependențele Local
+
+```bash
+npm install
+```
+
+### Pasul 6: Activează Neon în JavaScript
+
+În `js/bookings.js`, asigurați-vă că:
+```javascript
+const USE_NEON = true; // Setează la true pentru Neon
+```
+
+### Pasul 7: Redeploy pe Netlify
+
+1. **Commit și push** modificările (dacă folosiți Git)
+2. Sau **trigger manual deploy** în Netlify Dashboard
+3. Netlify Functions vor fi create automat din folderul `netlify/functions/`
+4. Verificați în **Deploys** că Functions s-au creat corect
+
+**Avantaje Neon:**
+- ✅ PostgreSQL serverless (scalabil automat)
+- ✅ Plan gratuit generos
+- ✅ Backup automat
+- ✅ Integrare simplă cu Netlify
+- ✅ Date persistente (nu se pierd la refresh)
+
+## 🔧 Extindere cu Firebase Firestore (Alternativă)
+
+Pentru a salva rezervările online cu Firebase Firestore:
 
 1. **Creați un proiect Firebase** pe [Firebase Console](https://console.firebase.google.com/)
 2. **Activați Firestore Database**
@@ -106,7 +206,8 @@ Pentru a salva rezervările online (în loc de LocalStorage):
 
 ## 📝 Notițe Importante
 
-- **LocalStorage**: Rezervările sunt salvate local în browser. Pentru producție, folosiți Firebase sau alt backend.
+- **Neon PostgreSQL**: Rezervările sunt salvate în baza de date Neon (recomandat pentru producție)
+- **LocalStorage**: Fallback pentru dezvoltare locală (când `USE_NEON = false`)
 - **EmailJS**: Este necesar pentru trimiterea email-urilor de confirmare.
 - **Responsive**: Site-ul este optimizat pentru desktop, tabletă și mobil.
 - **Browser Support**: Funcționează pe toate browserele moderne.
@@ -133,6 +234,4 @@ Pentru întrebări sau probleme, verificați:
 - [Documentația Firebase](https://firebase.google.com/docs)
 
 ---
-
-**Dezvoltat cu ❤️ pentru amintiri de neuitat! 🎄**
 

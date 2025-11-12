@@ -1,0 +1,15 @@
+{
+  "name": "christmas-photoshoot",
+  "version": "1.0.0",
+  "description": "Website de rezervări pentru fotografii de Crăciun",
+  "scripts": {
+    "dev": "echo 'Deschideți index.html în browser pentru dezvoltare locală'"
+  },
+  "keywords": ["photoshoot", "booking", "christmas"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.0"
+  }
+}
+

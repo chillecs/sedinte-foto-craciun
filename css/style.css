@@ -54,7 +54,7 @@ body {
 
 .navbar .container {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
 }
 
@@ -67,6 +67,9 @@ body {
     display: flex;
     list-style: none;
     gap: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 1rem;
 }
 
 .nav-menu a {
@@ -74,13 +77,18 @@ body {
     text-decoration: none;
     font-weight: 500;
     transition: var(--transition);
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 4rem;
     border-radius: 5px;
+    border: 1px solid rgba(255, 215, 0, 0.6);
+    background: rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .nav-menu a:hover,
 .nav-menu a.active {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 215, 0, 0.2);
+    border-color: rgba(255, 215, 0, 0.9);
+    box-shadow: 0 4px 10px rgba(255, 215, 0, 0.25);
 }
 
 /* ============================================
@@ -555,8 +563,14 @@ footer {
    ============================================ */
 @media (max-width: 768px) {
     .nav-menu {
-        flex-direction: column;
-        gap: 0.5rem;
+        flex-direction: row;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .nav-menu a {
+        text-align: center;
+        padding: 0.75rem 1.25rem;
     }
 
     .hero-content h1 {

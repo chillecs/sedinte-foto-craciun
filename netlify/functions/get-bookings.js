@@ -19,7 +19,6 @@ exports.handler = async (event, context) => {
         const connectionString = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
         
         if (!connectionString) {
-            console.error('DATABASE_URL sau NETLIFY_DATABASE_URL nu este configurat');
             return {
                 statusCode: 500,
                 body: JSON.stringify({ 
@@ -64,8 +63,6 @@ exports.handler = async (event, context) => {
         };
 
     } catch (error) {
-        console.error('Eroare la obținere rezervări:', error);
-        
         // Mesaje de eroare mai detaliate
         let errorMessage = 'Eroare la obținere rezervări din baza de date';
         

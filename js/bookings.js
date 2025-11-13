@@ -25,7 +25,6 @@ let emailjsConfigLoaded = false;
 // ============================================
 async function loadEmailJSConfig() {
     try {
-        console.log('Încărcare configurație EmailJS din Netlify...');
         // Adăugăm timestamp pentru a evita cache-ul browser-ului
         const timestamp = new Date().getTime();
         const response = await fetch(`/.netlify/functions/get-emailjs-config?t=${timestamp}`, {
@@ -36,9 +35,6 @@ async function loadEmailJSConfig() {
         });
         
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Eroare response:', response.status, errorText);
-            console.warn('Nu s-a putut încărca configurația EmailJS din Netlify. Verificați că variabilele de mediu sunt setate.');
             emailjsConfigLoaded = false;
             return;
         }
@@ -46,14 +42,12 @@ async function loadEmailJSConfig() {
         const config = await response.json();
         
         if (config.error) {
-            console.error('Eroare la încărcare config EmailJS:', config.error);
             emailjsConfigLoaded = false;
             return;
         }
         
         // Verifică dacă configurația este validă
         if (!config.PUBLIC_KEY || !config.SERVICE_ID || !config.TEMPLATE_ID) {
-            console.error('Configurația EmailJS este incompletă:', config);
             emailjsConfigLoaded = false;
             return;
         }
@@ -66,24 +60,12 @@ async function loadEmailJSConfig() {
         
         if (config.RECIPIENT_EMAIL) {
             RECIPIENT_EMAIL = config.RECIPIENT_EMAIL.trim();
-            console.log('✅ RECIPIENT_EMAIL încărcat:', RECIPIENT_EMAIL);
-        } else {
-            console.warn('⚠️ RECIPIENT_EMAIL nu este setat în configurație!');
         }
-        
-        console.log('Configurația EmailJS încărcată cu succes:', {
-            hasPublicKey: !!EMAILJS_CONFIG.PUBLIC_KEY,
-            hasServiceId: !!EMAILJS_CONFIG.SERVICE_ID,
-            hasTemplateId: !!EMAILJS_CONFIG.TEMPLATE_ID,
-            hasRecipientEmail: !!RECIPIENT_EMAIL,
-            recipientEmail: RECIPIENT_EMAIL // Logăm email-ul complet pentru debugging
-        });
         
         emailjsConfigLoaded = true;
         initializeEmailJS();
         
     } catch (error) {
-        console.error('Eroare la încărcare configurație EmailJS:', error);
         emailjsConfigLoaded = false;
     }
 }
@@ -92,7 +74,6 @@ async function loadEmailJSConfig() {
 function initializeEmailJS() {
     // Verifică dacă EmailJS SDK este încărcat
     if (typeof emailjs === 'undefined') {
-        console.error('EmailJS SDK nu este încărcat! Verificați că script-ul este inclus în bookings.html');
         return false;
     }
     
@@ -103,34 +84,15 @@ function initializeEmailJS() {
             
             // Verifică formatul public key-ului (ar trebui să fie alfanumeric, fără spații)
             if (cleanPublicKey.length < 10) {
-                console.error('PUBLIC_KEY pare prea scurt:', cleanPublicKey.length, 'caractere');
                 return false;
             }
             
-        console.log('Inițializare EmailJS cu PUBLIC_KEY:', {
-            originalLength: EMAILJS_CONFIG.PUBLIC_KEY.length,
-            cleanedLength: cleanPublicKey.length,
-            fullKey: cleanPublicKey, // Logăm key-ul complet pentru debugging
-            firstChars: cleanPublicKey.substring(0, 10),
-            lastChars: cleanPublicKey.substring(cleanPublicKey.length - 5),
-            hasSpaces: cleanPublicKey.includes(' '),
-            hasSpecialChars: /[^a-zA-Z0-9]/.test(cleanPublicKey)
-        });
-            
             emailjs.init(cleanPublicKey);
-            console.log('✅ EmailJS inițializat cu succes!');
             return true;
         } catch (error) {
-            console.error('❌ Eroare la inițializare EmailJS:', error);
-            console.error('Detalii eroare:', {
-                message: error.message,
-                stack: error.stack,
-                publicKeyLength: EMAILJS_CONFIG.PUBLIC_KEY ? EMAILJS_CONFIG.PUBLIC_KEY.length : 0
-            });
             return false;
         }
     } else {
-        console.warn('EmailJS PUBLIC_KEY nu este configurat sau este gol');
         return false;
     }
 }
@@ -168,7 +130,6 @@ async function getBookingsFromNeon(date) {
         } catch (e) {
             errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         }
-        console.error('Eroare response:', errorMessage);
         throw new Error(errorMessage);
     }
     
@@ -321,7 +282,6 @@ async function displayTimeSlots(date) {
             grid.appendChild(button);
         });
     } catch (error) {
-        console.error('Eroare la afișare sloturi:', error);
         // Afișează mesaj de eroare
         grid.innerHTML = `
             <div style="grid-column: 1 / -1; padding: 1rem; background-color: #f8d7da; color: #721c24; border-radius: 5px; text-align: center;">
@@ -489,7 +449,6 @@ async function submitBooking(formData) {
     try {
         await saveBooking(selectedDate, selectedTimeSlot, formData);
     } catch (error) {
-        console.error('Eroare la salvare rezervare:', error);
         showMessage(`Eroare la salvare în baza de date: ${error.message}`, 'error');
         submitBtn.disabled = false;
         submitBtn.textContent = 'Rezervează';
@@ -510,7 +469,6 @@ async function submitBooking(formData) {
                 resetFormAfterSuccess();
             })
             .catch((error) => {
-                console.error('Eroare la trimiterea email-ului:', error);
                 showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului de confirmare catre noi. Vă rugăm să ne contactați direct pe Facebook!', 'error');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Rezervează';
@@ -540,14 +498,12 @@ function submitToNetlify(form, formData, submitBtn) {
                 resetFormAfterSuccess();
             })
             .catch((err) => {
-                console.error('Eroare la trimiterea email-ului:', err);
                 // Rezervarea a fost salvată în Neon și Netlify, dar email-ul nu s-a trimis
                 showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului de confirmare catre noi. Vă rugăm să ne contactați direct pe Facebook!', 'error');
                 resetFormAfterSuccess();
             });
     })
     .catch((error) => {
-        console.error('Eroare la trimiterea la Netlify:', error);
         // Fallback: încearcă EmailJS dacă este disponibil
         sendEmail(formData)
             .then(() => {
@@ -591,23 +547,8 @@ async function sendEmail(formData) {
     // Reinițializează dacă este necesar
     try {
         const cleanPublicKey = EMAILJS_CONFIG.PUBLIC_KEY.trim().replace(/\s+/g, '');
-        
-        console.log('Reinițializare EmailJS înainte de trimitere:', {
-            publicKeyLength: cleanPublicKey.length,
-            firstChars: cleanPublicKey.substring(0, 15) + '...'
-        });
-        
         emailjs.init(cleanPublicKey);
-        
-        // Verifică dacă inițializarea a reușit
-        // EmailJS v4 nu aruncă eroare la init dacă key-ul este invalid, dar va arunca la send
-        console.log('EmailJS reinițializat, pregătit pentru trimitere');
     } catch (error) {
-        console.error('❌ Eroare la reinițializare EmailJS:', error);
-        console.error('Detalii:', {
-            message: error.message,
-            publicKeyLength: EMAILJS_CONFIG.PUBLIC_KEY ? EMAILJS_CONFIG.PUBLIC_KEY.length : 0
-        });
         return Promise.reject(new Error('Eroare la inițializare EmailJS. Verificați că PUBLIC_KEY este corect.'));
     }
     
@@ -639,14 +580,6 @@ async function sendEmail(formData) {
     const cleanTemplateId = EMAILJS_CONFIG.TEMPLATE_ID.trim();
     const cleanPublicKey = EMAILJS_CONFIG.PUBLIC_KEY.trim().replace(/\s+/g, '');
     
-    console.log('📧 Trimitere email prin EmailJS:', {
-        serviceId: cleanServiceId,
-        templateId: cleanTemplateId,
-        recipientEmail: RECIPIENT_EMAIL,
-        publicKeyLength: cleanPublicKey.length,
-        publicKeyPreview: cleanPublicKey.substring(0, 15) + '...'
-    });
-    
     // Trimite email prin EmailJS cu gestionare detaliată a erorilor
     try {
         const result = await emailjs.send(
@@ -654,20 +587,8 @@ async function sendEmail(formData) {
             cleanTemplateId,
             templateParams
         );
-        console.log('✅ Email trimis cu succes:', result);
         return result;
     } catch (error) {
-        console.error('❌ Eroare la trimitere email prin EmailJS:', error);
-        console.error('Detalii eroare:', {
-            status: error.status,
-            text: error.text,
-            message: error.message,
-            publicKeyLength: cleanPublicKey.length,
-            publicKeyPreview: cleanPublicKey.substring(0, 15) + '...',
-            serviceId: cleanServiceId,
-            templateId: cleanTemplateId
-        });
-        
         // Mesaje de eroare mai clare
         if (error.text && error.text.includes('Invalid public key')) {
             throw new Error('PUBLIC_KEY invalid. Verificați că ați copiat corect Public Key din EmailJS Dashboard > Account > API Keys. Asigurați-vă că folosiți Public Key (nu Private Key).');

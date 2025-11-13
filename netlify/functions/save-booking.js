@@ -86,7 +86,6 @@ exports.handler = async (event, context) => {
         };
 
     } catch (error) {
-        console.error('Eroare la salvare:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'Eroare la salvare în baza de date' })

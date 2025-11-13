@@ -60,7 +60,6 @@ exports.handler = async (event, context) => {
         };
 
     } catch (error) {
-        console.error('Eroare la verificare:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'Eroare la verificare în baza de date' })

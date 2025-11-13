@@ -20,20 +20,6 @@ exports.handler = async (event, context) => {
         const templateId = process.env.TEMPLATE_ID;
         const recipientEmail = process.env.RECIPIENT_EMAIL;
         
-        // Log pentru debugging
-        console.log('Variabile de mediu EmailJS:', {
-            hasPublicKey: !!publicKey,
-            hasServiceId: !!serviceId,
-            hasTemplateId: !!templateId,
-            hasRecipientEmail: !!recipientEmail,
-            recipientEmail: recipientEmail || 'N/A', // Logăm email-ul pentru debugging
-            publicKeyLength: publicKey ? publicKey.length : 0,
-            publicKeyFirstChars: publicKey ? publicKey.substring(0, 10) + '...' : 'N/A',
-            publicKeyLastChars: publicKey ? '...' + publicKey.substring(publicKey.length - 5) : 'N/A',
-            publicKeyHasSpaces: publicKey ? publicKey.includes(' ') : false,
-            publicKeyTrimmedLength: publicKey ? publicKey.trim().length : 0
-        });
-        
         const config = {
             PUBLIC_KEY: publicKey || '',
             SERVICE_ID: serviceId || '',
@@ -78,7 +64,6 @@ exports.handler = async (event, context) => {
         };
 
     } catch (error) {
-        console.error('Eroare la obținere config EmailJS:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'Eroare la obținere configurație EmailJS' })

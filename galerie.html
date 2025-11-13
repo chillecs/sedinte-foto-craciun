@@ -22,71 +22,41 @@
         <section class="gallery-hero">
             <div class="container">
                 <h1>Galerie Fotografii</h1>
-                <p>Descoperiți magia sesiunilor noastre de fotografii de Crăciun</p>
+                <p>Descoperiți decorurile noastre</p>
+                <p>Rezervați sesiunea voastră de fotografii acum!</p>
             </div>
         </section>
 
         <section class="gallery-section">
             <div class="container">
                 <div class="gallery-grid">
-                    <!-- Placeholder images - înlocuiți cu pozele voastre reale -->
                     <div class="gallery-item">
-                        <div class="gallery-placeholder">
-                            <span>📷</span>
-                            <p>Fotografie Familie</p>
-                        </div>
+                        <img src="images/poza1.jpg" alt="Fotografie Christmas Photoshoot" loading="lazy">
                     </div>
                     <div class="gallery-item">
-                        <div class="gallery-placeholder">
-                            <span>📷</span>
-                            <p>Fotografie Familie</p>
-                        </div>
+                        <img src="images/poza2.jpg" alt="Fotografie Christmas Photoshoot" loading="lazy">
                     </div>
                     <div class="gallery-item">
-                        <div class="gallery-placeholder">
-                            <span>📷</span>
-                            <p>Fotografie Copii</p>
-                        </div>
+                        <img src="images/poza3.jpg" alt="Fotografie Christmas Photoshoot" loading="lazy">
                     </div>
                     <div class="gallery-item">
-                        <div class="gallery-placeholder">
-                            <span>📷</span>
-                            <p>Fotografie Familie</p>
-                        </div>
+                        <img src="images/poza4.jpg" alt="Fotografie Christmas Photoshoot" loading="lazy">
                     </div>
                     <div class="gallery-item">
-                        <div class="gallery-placeholder">
-                            <span>📷</span>
-                            <p>Fotografie Copii</p>
-                        </div>
+                        <img src="images/poza5.jpg" alt="Fotografie Christmas Photoshoot" loading="lazy">
                     </div>
                     <div class="gallery-item">
-                        <div class="gallery-placeholder">
-                            <span>📷</span>
-                            <p>Fotografie Familie</p>
-                        </div>
+                        <img src="images/poza6.jpg" alt="Fotografie Christmas Photoshoot" loading="lazy">
                     </div>
                     <div class="gallery-item">
-                        <div class="gallery-placeholder">
-                            <span>📷</span>
-                            <p>Fotografie Familie</p>
-                        </div>
+                        <img src="images/poza7.jpg" alt="Fotografie Christmas Photoshoot" loading="lazy">
                     </div>
                     <div class="gallery-item">
-                        <div class="gallery-placeholder">
-                            <span>📷</span>
-                            <p>Fotografie Copii</p>
-                        </div>
+                        <img src="images/poza8.jpg" alt="Fotografie Christmas Photoshoot" loading="lazy">
                     </div>
                     <div class="gallery-item">
-                        <div class="gallery-placeholder">
-                            <span>📷</span>
-                            <p>Fotografie Familie</p>
-                        </div>
+                        <img src="images/poza9.jpg" alt="Fotografie Christmas Photoshoot" loading="lazy">
                     </div>
-                </div>
-                <div class="gallery-note">
-                    <p>💡 <strong>Notă:</strong> Înlocuiți placeholder-urile cu pozele voastre reale. Adăugați imaginile în folderul <code>images/</code> și actualizați HTML-ul cu tag-uri <code>&lt;img&gt;</code>.</p>
                 </div>
             </div>
         </section>
@@ -106,7 +76,18 @@
         </div>
     </footer>
 
+    <!-- Lightbox Modal -->
+    <div class="lightbox" id="lightbox">
+        <span class="lightbox-close" id="lightboxClose">&times;</span>
+        <span class="lightbox-prev" id="lightboxPrev">&#10094;</span>
+        <span class="lightbox-next" id="lightboxNext">&#10095;</span>
+        <div class="lightbox-content">
+            <img class="lightbox-image" id="lightboxImage" src="" alt="Fotografie Christmas Photoshoot">
+        </div>
+    </div>
+
     <script src="js/main.js"></script>
+    <script src="js/gallery.js"></script>
 </body>
 </html>
 

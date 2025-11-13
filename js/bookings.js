@@ -109,6 +109,25 @@ const AVAILABLE_TIME_SLOTS = [
     '20:00-21:00'
 ];
 
+let seasonStartDate = null;
+let seasonEndDate = null;
+let seasonRangeLabel = '';
+
+function formatDateForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function isWithinSeason(date) {
+    if (!seasonStartDate || !seasonEndDate) {
+        return false;
+    }
+    const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return normalizedDate >= seasonStartDate && normalizedDate <= seasonEndDate;
+}
+
 // ============================================
 // STOCARE REZERVĂRI - Neon PostgreSQL
 // ============================================
@@ -224,16 +243,40 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================
 function initializeDatePicker() {
     const datePicker = document.getElementById('datePicker');
+    if (!datePicker) {
+        return;
+    }
     
-    // Setează data minimă la azi
     const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const minDate = `${year}-${month}-${day}`;
-    
+    const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    let year = normalizedToday.getFullYear();
+
+    seasonStartDate = new Date(year, 10, 15); // 15 noiembrie
+    seasonEndDate = new Date(year, 11, 13);   // 13 decembrie
+
+    if (normalizedToday > seasonEndDate) {
+        seasonStartDate.setFullYear(year + 1);
+        seasonEndDate.setFullYear(year + 1);
+    }
+
+    seasonStartDate.setHours(0, 0, 0, 0);
+    seasonEndDate.setHours(23, 59, 59, 999);
+
+    seasonRangeLabel = `${seasonStartDate.toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })} – ${seasonEndDate.toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+
+    const minDate = formatDateForInput(seasonStartDate);
+    const maxDate = formatDateForInput(seasonEndDate);
+
     datePicker.setAttribute('min', minDate);
-    datePicker.value = minDate; // Setează data de azi ca default
+    datePicker.setAttribute('max', maxDate);
+
+    let defaultDate = new Date(normalizedToday);
+    if (!isWithinSeason(defaultDate)) {
+        defaultDate = new Date(seasonStartDate.getTime());
+    }
+
+    const defaultDateString = formatDateForInput(defaultDate);
+    datePicker.value = defaultDateString;
     
     // Ascultă schimbările de dată
     datePicker.addEventListener('change', function() {
@@ -245,8 +288,8 @@ function initializeDatePicker() {
         }
     });
     
-    // Afișează sloturile pentru data de azi la încărcare
-    displayTimeSlots(minDate);
+    // Afișează sloturile pentru data implicită la încărcare
+    displayTimeSlots(defaultDateString);
 }
 
 // ============================================
@@ -256,13 +299,32 @@ async function displayTimeSlots(date) {
     const container = document.getElementById('timeSlotsContainer');
     const grid = document.getElementById('timeSlotsGrid');
     
-    // Verifică dacă data este în trecut
     const selectedDate = new Date(date);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (!isWithinSeason(selectedDate)) {
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; padding: 1rem; background-color: #fff3cd; color: #856404; border-radius: 5px; text-align: center;">
+                <p><strong>Rezervările sunt disponibile între ${seasonRangeLabel}.</strong></p>
+            </div>
+        `;
+        container.style.display = 'block';
+        resetForm();
+        return;
+    }
+
+    // Verifică dacă data este în trecut
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     if (selectedDate < today) {
-        hideTimeSlots();
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; padding: 1rem; background-color: #f8d7da; color: #721c24; border-radius: 5px; text-align: center;">
+                <p><strong>Nu puteți selecta o dată din trecut.</strong></p>
+            </div>
+        `;
+        container.style.display = 'block';
+        resetForm();
         return;
     }
     

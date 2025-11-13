@@ -486,6 +486,53 @@ body {
     flex-direction: column;
 }
 
+.form-group.terms-consent {
+    align-items: center;
+    gap: 1.25rem;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+    text-align: center;
+    border: 2px solid var(--accent-color);
+    border-radius: 10px;
+    padding: 1.2rem;
+}
+
+.form-group.terms-consent label {
+    margin-bottom: 0;
+}
+
+.terms-text {
+    text-align: left;
+    max-width: 100%;
+}
+
+.terms-text ul {
+    list-style: disc;
+    padding-left: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.terms-checkbox {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.terms-checkbox input[type="checkbox"] {
+    width: 1.4rem;
+    height: 1.4rem;
+    accent-color: var(--primary-color);
+}
+
+.terms-checkbox span {
+    line-height: 1.4;
+}
+
 .form-group label {
     margin-bottom: 0.5rem;
     font-weight: 600;

@@ -392,6 +392,17 @@ function hideTimeSlots() {
 // ============================================
 let selectedDate = null;
 let selectedTimeSlot = null;
+let termsCheckbox = null;
+
+function updateSubmitButtonState() {
+    const submitBtn = document.getElementById('submitBtn');
+    if (!submitBtn) {
+        return;
+    }
+
+    const isTermsAccepted = termsCheckbox ? termsCheckbox.checked : false;
+    submitBtn.disabled = !(selectedDate && selectedTimeSlot && isTermsAccepted);
+}
 
 function selectTimeSlot(timeSlot, date) {
     // Elimină selecția anterioară
@@ -408,9 +419,8 @@ function selectTimeSlot(timeSlot, date) {
     // Actualizează informațiile afișate
     updateSelectedInfo(date, timeSlot);
     
-    // Activează butonul de submit
-    const submitBtn = document.getElementById('submitBtn');
-    submitBtn.disabled = false;
+    // Activează butonul de submit dacă termenii sunt acceptați
+    updateSubmitButtonState();
 }
 
 function updateSelectedInfo(date, timeSlot) {
@@ -440,8 +450,10 @@ function resetForm() {
     const selectedInfo = document.getElementById('selectedInfo');
     selectedInfo.style.display = 'none';
     
-    const submitBtn = document.getElementById('submitBtn');
-    submitBtn.disabled = true;
+    if (termsCheckbox) {
+        termsCheckbox.checked = false;
+    }
+    updateSubmitButtonState();
     
     const formMessage = document.getElementById('formMessage');
     formMessage.style.display = 'none';
@@ -453,6 +465,12 @@ function resetForm() {
 // ============================================
 function setupFormHandlers() {
     const form = document.getElementById('bookingForm');
+    
+    termsCheckbox = document.getElementById('termsCheckbox');
+    if (termsCheckbox) {
+        termsCheckbox.addEventListener('change', updateSubmitButtonState);
+    }
+    updateSubmitButtonState();
     
     form.addEventListener('submit', async function(e) {
         e.preventDefault();

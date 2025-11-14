@@ -358,8 +358,10 @@ async function displayTimeSlots(date) {
     // Afișează containerul
     container.style.display = 'block';
     
-    // Resetează selecția
-    resetForm();
+    // Resetează selecția (dar păstrează mesajul dacă există unul de succes)
+    const formMessage = document.getElementById('formMessage');
+    const hasSuccessMessage = formMessage && formMessage.classList.contains('success') && formMessage.style.display !== 'none';
+    resetForm(hasSuccessMessage);
 }
 
 function createTimeSlotButton(timeSlot, isBooked, date) {
@@ -443,7 +445,7 @@ function updateSelectedInfo(date, timeSlot) {
     selectedInfo.style.display = 'block';
 }
 
-function resetForm() {
+function resetForm(preserveMessage = false) {
     selectedDate = null;
     selectedTimeSlot = null;
     
@@ -455,9 +457,12 @@ function resetForm() {
     }
     updateSubmitButtonState();
     
-    const formMessage = document.getElementById('formMessage');
-    formMessage.style.display = 'none';
-    formMessage.className = 'form-message';
+    // Nu ascunde mesajul dacă este un mesaj de succes și preserveMessage este true
+    if (!preserveMessage) {
+        const formMessage = document.getElementById('formMessage');
+        formMessage.style.display = 'none';
+        formMessage.className = 'form-message';
+    }
 }
 
 // ============================================
@@ -684,18 +689,33 @@ async function sendEmail(formData) {
 }
 
 function resetFormAfterSuccess() {
+    // Salvează data selectată înainte de resetare
+    const savedDate = selectedDate;
+    
     // Resetează formularul
     document.getElementById('bookingForm').reset();
     
-    // Reîncarcă sloturile pentru a marca slotul ca rezervat
-    displayTimeSlots(selectedDate);
+    // Reîncarcă sloturile pentru a marca slotul ca rezervat (dacă avem o dată salvată)
+    if (savedDate) {
+        displayTimeSlots(savedDate);
+    }
     
-    // Resetează selecția
-    resetForm();
+    // Resetează selecția (dar NU ascunde mesajul de succes)
+    selectedDate = null;
+    selectedTimeSlot = null;
+    
+    const selectedInfo = document.getElementById('selectedInfo');
+    selectedInfo.style.display = 'none';
+    
+    if (termsCheckbox) {
+        termsCheckbox.checked = false;
+    }
+    updateSubmitButtonState();
     
     // Resetează butonul
     const submitBtn = document.getElementById('submitBtn');
     submitBtn.textContent = 'Rezervează';
+    // NU ascunde mesajul - lasă-l să fie vizibil pentru utilizator
 }
 
 function showMessage(message, type) {

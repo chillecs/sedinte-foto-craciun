@@ -252,7 +252,7 @@ function initializeDatePicker() {
     let year = normalizedToday.getFullYear();
 
     seasonStartDate = new Date(year, 10, 15); // 15 noiembrie
-    seasonEndDate = new Date(year, 11, 13);   // 13 decembrie
+    seasonEndDate = new Date(year, 11, 12);   // 12 decembrie
 
     if (normalizedToday > seasonEndDate) {
         seasonStartDate.setFullYear(year + 1);
@@ -546,11 +546,11 @@ async function submitBooking(formData) {
         // Fallback: trimite prin EmailJS dacă este configurat
         sendEmail(formData)
             .then(() => {
-                showMessage('Rezervarea a fost trimisă cu succes! Va vom contacta in cel mai scurt timp posibil pe Facebook!', 'success');
+                showMessage('Data dumneavoastră a fost rezervată cu succes, vă așteptăm cu nerăbdare!', 'success');
                 resetFormAfterSuccess();
             })
             .catch((error) => {
-                showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului de confirmare catre noi. Vă rugăm să ne contactați direct pe Facebook!', 'error');
+                showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului de confirmare către noi. Vă rugăm să ne contactați direct pe Facebook!', 'error');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Rezervează';
             });
@@ -575,12 +575,12 @@ function submitToNetlify(form, formData, submitBtn) {
         // Trimite email prin EmailJS
         sendEmail(formData)
             .then(() => {
-                showMessage('Rezervarea a fost trimisă cu succes! Va vom contacta in cel mai scurt timp posibil pe Facebook!', 'success');
+                showMessage('Data dumneavoastră a fost rezervată cu succes, vă așteptăm cu nerăbdare!', 'success');
                 resetFormAfterSuccess();
             })
             .catch((err) => {
                 // Rezervarea a fost salvată în Neon și Netlify, dar email-ul nu s-a trimis
-                showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului de confirmare catre noi. Vă rugăm să ne contactați direct pe Facebook!', 'error');
+                showMessage('Rezervarea a fost salvată, dar a apărut o eroare la trimiterea email-ului de confirmare către noi. Vă rugăm să ne contactați direct pe Facebook!', 'error');
                 resetFormAfterSuccess();
             });
     })
@@ -588,7 +588,7 @@ function submitToNetlify(form, formData, submitBtn) {
         // Fallback: încearcă EmailJS dacă este disponibil
         sendEmail(formData)
             .then(() => {
-                showMessage('Rezervarea a fost trimisă prin email catre noi! Va vom contacta in cel mai scurt timp posibil pe Facebook!', 'success');
+                showMessage('Data dumneavoastră a fost rezervată cu succes, vă așteptăm cu nerăbdare!', 'success');
                 resetFormAfterSuccess();
             })
             .catch(() => {
